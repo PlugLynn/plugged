@@ -70,16 +70,6 @@ https://github.com/welovekpop/SekshiBot/blob/master/src/Sekshi.js
 var CHAT_TIMEOUT_INC = 70;
 var CHAT_TIMEOUT_MAX = 700;
 
-WebSocket.prototype.sendMessage = function(type, data) {
-    if(typeof type === "string" && (typeof data === "string" || typeof data === "number")) {
-        this.send(JSON.stringify({
-            a: type,
-            p: data,
-            t: Date.now()
-        }));
-    }
-};
-
 function Plugged(options) {
     Plugged.super_.call(this);
 
@@ -280,7 +270,7 @@ Plugged.prototype._processChatQueue = function(lastMessage) {
     if(this.chatQueue.length > 0) {
         if(lastMessage + this.chatTimeout <= Date.now()) {
             var msg = this.chatQueue.shift();
-            this.sock.sendMessage("chat", msg.message);
+            this._sendMessage("chat", msg.message);
 
             // timeouts can't get lower than 4ms but anything below 1000ms is ridiculous anyway
             if(msg.timeout >= 0) {
@@ -354,7 +344,7 @@ Plugged.prototype._connectSocket = function() {
     this.sock.on("open", function _sockOpen() {
         self._log("socket opened", 3, "magenta");
         self.emit(self.SOCK_OPEN, self);
-        this.sendMessage("auth", self.auth);
+        self._sendMessage("auth", self.auth);
         self._keepAliveCheck.call(self);
     });
 
@@ -385,6 +375,16 @@ Plugged.prototype._connectSocket = function() {
         else
             self._wsaprocessor(self, msg);
     });
+};
+
+Plugged.prototype._sendMessage = function(type, data) {
+    if(typeof type === "string" && (typeof data === "string" || typeof data === "number")) {
+        this.sock.send(JSON.stringify({
+            a: type,
+            p: data,
+            t: Date.now()
+        }));
+    }
 };
 
 Plugged.prototype.clearUserCache = function() {
